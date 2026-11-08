@@ -8,9 +8,10 @@ using one `systemd` oneshot service per partition.
 Keep the module files together:
 
 ```text
-partitions-module/
+nixos-partitions/
 ├── partitions.nix
 ├── README.md
+├── LICENSE
 └── scripts/
     ├── mount-partition.sh
     └── unmount-partition.sh
@@ -21,12 +22,12 @@ Import `partitions.nix` from your NixOS configuration:
 ```nix
 {
   imports = [
-    ./modules/partitions-module/partitions.nix
+    ./modules/nixos-partitions/partitions.nix
   ];
 }
 ```
 
-## Configuration
+## How to use it
 
 Define the partitions using the top-level `partitions` option:
 
