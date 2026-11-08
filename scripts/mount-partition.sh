@@ -28,7 +28,8 @@ esac
 if [[ -n "$explicit_path" ]]; then
   mountpoint_path="$explicit_path"
 elif [[ -n "$owner" ]]; then
-  home="$(getent passwd "$owner" | cut -d: -f6 || true)"
+  passwd_entry="$(getent passwd "$owner" || true)"
+  home="$(printf '%s\n' "$passwd_entry" | cut -d: -f6)"
 
   if [[ -z "$home" ]]; then
     echo "Could not find the home directory for user: $owner" >&2
@@ -110,8 +111,11 @@ case "$fs_type" in
     if [[ -n "$permissions" ]]; then
       mode=$((8#$permissions))
       mask=$((0777 & ~mode))
+
       printf -v dmask '%03o' "$mask"
-      mount_options="$mount_options,dmask=$dmask"
+      printf -v fmask '%03o' "$mask"
+
+      mount_options="$mount_options,dmask=$dmask,fmask=$fmask"
     fi
     ;;
 esac
@@ -123,8 +127,10 @@ mounted=0
 if [[ "$fs_type" == "ntfs" ]]; then
   if mount -t ntfs3 -o "$mount_options" "$source" "$mountpoint_path"; then
     mounted=1
-  elif mount -t ntfs-3g -o "$mount_options" "$source" "$mountpoint_path"; then
-    mounted=1
+  elif ! mountpoint -q "$mountpoint_path"; then
+    if mount -t ntfs-3g -o "$mount_options" "$source" "$mountpoint_path"; then
+      mounted=1
+    fi
   fi
 else
   if mount -t "$fs_type" -o "$mount_options" "$source" "$mountpoint_path"; then
@@ -139,7 +145,11 @@ fi
 
 # Remember the actual mountpoint so the service can unmount it cleanly
 # when it stops during shutdown.
-printf '%s\n' "$mountpoint_path" > "$state_file"
+if ! printf '%s\n' "$mountpoint_path" > "$state_file"; then
+  echo "Could not write mount state file: $state_file" >&2
+  umount "$mountpoint_path" || true
+  exit 1
+fi
 
 metadata_failure() {
   echo "$1" >&2

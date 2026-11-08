@@ -137,13 +137,13 @@ in
         assertion =
           builtins.length partitionNames
           == builtins.length (lib.unique partitionNames);
-        message = .partitions must not contain duplicate names.";
+        message = "partitions must not contain duplicate names.";
       }
 
       {
         assertion = lib.all
           (p:
-            builtins.match "[A-Za-z0-9_-][A-Za-z0-9._-]*" p.name != null
+            builtins.match "[^A-Za-z0-9_-][A-Za-z0-9._-]*" p.name != null
           )
           cfg;
         message = ''
@@ -157,7 +157,7 @@ in
         assertion =
           builtins.length mountPaths
           == builtins.length (lib.unique mountPaths);
-        message = .partitions must not contain duplicate mount paths.";
+        message = "partitions must not contain duplicate mount paths.";
       }
 
       {
